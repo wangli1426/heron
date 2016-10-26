@@ -828,9 +828,9 @@ TEST(StMgr, test_all_grouping_route) {
   common.topology_id_ = "abcd-9999";
   common.num_stmgrs_ = 3;
   common.num_spouts_ = 1;  // This test will only work with 1 type of spout
-  common.num_spout_instances_ = 8;
-  common.num_bolts_ = 1;
-  common.num_bolt_instances_ = 4;
+  common.num_spout_instances_ = 4;
+  common.num_bolts_ = 2;
+  common.num_bolt_instances_ = 8;
   common.grouping_ = heron::proto::api::ALL;
   // Empty so that we don't attempt to connect to the zk
   // but instead connect to the local filesytem

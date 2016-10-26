@@ -23,7 +23,8 @@ message HeronDataTuple {
   // to these destination global task ids as well
   // Only valid for data tuples from instance to stmgr
   repeated int32 dest_task_ids = 4;
-  optional bool all_grouping = 5;
+  repeated int32 additional_keys = 5;
+//  optional int32 all_grouping = 5;
 }
 
 message HeronDataTupleSet {

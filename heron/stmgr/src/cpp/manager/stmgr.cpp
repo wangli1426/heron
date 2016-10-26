@@ -470,6 +470,8 @@ void StMgr::SendInBound(sp_int32 _task_id, proto::system::HeronTupleSet* _messag
     proto::stmgr::TupleMessage out;
     out.mutable_set()->set_allocated_data(_message->release_data());  // avoids copying
     server_->SendToInstance(_task_id, out);
+
+
   }
   if (_message->has_control()) {
     // We got a bunch of acks/fails
@@ -611,25 +613,86 @@ void StMgr::CopyDataOutBound(sp_int32 _src_task_id, bool _local_spout,
                              const proto::system::HeronDataTuple& _tuple,
                              const std::list<std::pair<sp_int32, sp_int32> >& _out_tasks) {
   bool first_iteration = true;
+  sp_int32 current_all_grouping_id = -1;
+  std::map<std::pair<sp_int32, sp_string>, std::list<sp_int32> > group_id_dest_stmgr_id_to_taskids;
+
   for (auto iter = _out_tasks.begin(); iter != _out_tasks.end(); ++iter) {
-    sp_int64 tuple_key = tuple_cache_->add_data_tuple(iter->first, _streamid, _tuple, false);
+    const sp_int32 dest_task_id = iter->first;
+    const sp_int32 group_id = iter->second;
+    if (group_id > 0) {
+      const sp_string dest_stmgr_id = task_id_to_stmgr_[iter->first];
+      const std::pair<sp_int32, sp_string> key = std::make_pair(group_id, dest_stmgr_id);
+      if (group_id_dest_stmgr_id_to_taskids.find(key) ==
+         group_id_dest_stmgr_id_to_taskids.end()) {
+        std::list<sp_int32> tasks;
+        group_id_dest_stmgr_id_to_taskids.insert(std::make_pair(key, tasks));
+      }
+      group_id_dest_stmgr_id_to_taskids[key].push_back(dest_task_id);
+    }
+  }
+
+  std::list<sp_int32> tasks;
+  for (auto iter = group_id_dest_stmgr_id_to_taskids.begin(); iter !=
+       group_id_dest_stmgr_id_to_taskids.end(); ++iter) {
+    tasks = iter->second;
+    const sp_int32 first_task = tasks.front();
+    tasks.pop_front();
+    std::list<sp_int64> tuple_keys = tuple_cache_->add_data_tuple(first_task,
+                                                                  _streamid, _tuple, tasks);
     if (_tuple.roots_size() > 0) {
+      for (auto tuple_key_iter = tuple_keys.begin(); tuple_key_iter != tuple_keys.end();
+          ++tuple_key_iter) {
       // Anchored tuple
-      if (_local_spout) {
-        // This is a local spout. We need to maintain xors
-        CHECK_EQ(_tuple.roots_size(), 1);
-        if (first_iteration) {
-          xor_mgrs_->create(_src_task_id, _tuple.roots(0).key(), tuple_key);
+        if (_local_spout) {
+          // This is a local spout. We need to maintain xors
+          CHECK_EQ(_tuple.roots_size(), 1);
+          if (first_iteration) {
+            xor_mgrs_->create(_src_task_id, _tuple.roots(0).key(), *tuple_key_iter);
+          } else {
+            CHECK(!xor_mgrs_->anchor(_src_task_id, _tuple.roots(0).key(), *tuple_key_iter));
+          }
         } else {
-          CHECK(!xor_mgrs_->anchor(_src_task_id, _tuple.roots(0).key(), tuple_key));
+          // Anchored emits from local bolt
+          for (sp_int32 i = 0; i < _tuple.roots_size(); ++i) {
+            proto::system::AckTuple t;
+            t.add_roots()->CopyFrom(_tuple.roots(i));
+            t.set_ackedtuple(*tuple_key_iter);
+            tuple_cache_->add_emit_tuple(_tuple.roots(i).taskid(), t);
+          }
         }
-      } else {
-        // Anchored emits from local bolt
-        for (sp_int32 i = 0; i < _tuple.roots_size(); ++i) {
-          proto::system::AckTuple t;
-          t.add_roots()->CopyFrom(_tuple.roots(i));
-          t.set_ackedtuple(tuple_key);
-          tuple_cache_->add_emit_tuple(_tuple.roots(i).taskid(), t);
+      }
+    }
+    first_iteration = false;
+  }
+
+  tasks.clear();
+  first_iteration = true;
+  for (auto iter = _out_tasks.begin(); iter != _out_tasks.end(); ++iter) {
+    if (iter->second > 0) {
+      continue;
+    }
+    std::list<sp_int64> tuple_keys = tuple_cache_->add_data_tuple(iter->first, _streamid, _tuple,
+                                                                  tasks);
+    if (_tuple.roots_size() > 0) {
+      for (auto tuple_key_iter = tuple_keys.begin(); tuple_key_iter != tuple_keys.end();
+          ++tuple_key_iter) {
+      // Anchored tuple
+        if (_local_spout) {
+          // This is a local spout. We need to maintain xors
+          CHECK_EQ(_tuple.roots_size(), 1);
+          if (first_iteration) {
+            xor_mgrs_->create(_src_task_id, _tuple.roots(0).key(), *tuple_key_iter);
+          } else {
+            CHECK(!xor_mgrs_->anchor(_src_task_id, _tuple.roots(0).key(), *tuple_key_iter));
+          }
+        } else {
+          // Anchored emits from local bolt
+          for (sp_int32 i = 0; i < _tuple.roots_size(); ++i) {
+            proto::system::AckTuple t;
+            t.add_roots()->CopyFrom(_tuple.roots(i));
+            t.set_ackedtuple(*tuple_key_iter);
+            tuple_cache_->add_emit_tuple(_tuple.roots(i).taskid(), t);
+          }
         }
       }
     }
