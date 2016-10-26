@@ -19,6 +19,7 @@
 
 #include <list>
 #include <vector>
+#include <utility>
 #include "proto/messages.h"
 #include "network/network.h"
 #include "basics/basics.h"
@@ -37,7 +38,8 @@ class StreamConsumers {
   void NewConsumer(const proto::api::InputStream& _is, const proto::api::StreamSchema& _schema,
                    const std::vector<sp_int32>& _task_ids);
 
-  void GetListToSend(const proto::system::HeronDataTuple& _tuple, std::list<sp_int32>& _return);
+  void GetListToSend(const proto::system::HeronDataTuple& _tuple, std::list<std::pair<sp_int32,
+                     sp_int32> >& _return);
 
  private:
   std::list<Grouping*> consumers_;

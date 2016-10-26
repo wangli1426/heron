@@ -31,6 +31,7 @@ namespace stmgr {
 
 ShuffleGrouping::ShuffleGrouping(const std::vector<sp_int32>& _task_ids) : Grouping(_task_ids) {
   next_index_ = rand() % task_ids_.size();
+//  SetGrouping(proto::api::SHUFFLE);
 }
 
 ShuffleGrouping::~ShuffleGrouping() {}

@@ -813,6 +813,80 @@ TEST(StMgr, test_custom_grouping_route) {
   TearCommonResources(common);
 }
 
+// Test to make sure that all grouping routing works
+TEST(StMgr, test_all_grouping_route) {
+  CommonResources common;
+
+  // Initialize dummy params
+  common.tmaster_port_ = 15500;
+  common.tmaster_controller_port_ = 15501;
+  common.tmaster_stats_port_ = 15502;
+  common.stmgr_baseport_ = 25500;
+  common.metricsmgr_port_ = 35500;
+  common.shell_port_ = 45500;
+  common.topology_name_ = "mytopology";
+  common.topology_id_ = "abcd-9999";
+  common.num_stmgrs_ = 3;
+  common.num_spouts_ = 1;  // This test will only work with 1 type of spout
+  common.num_spout_instances_ = 8;
+  common.num_bolts_ = 1;
+  common.num_bolt_instances_ = 4;
+  common.grouping_ = heron::proto::api::ALL;
+  // Empty so that we don't attempt to connect to the zk
+  // but instead connect to the local filesytem
+  common.zkhostportlist_ = "";
+
+  // Start the tmaster etc.
+  StartTMaster(common);
+
+  // Start the metrics mgr
+  StartMetricsMgr(common);
+
+  int num_msgs_sent_by_spout_instance = 8;
+
+  // Distribute workers across stmgrs
+  DistributeWorkersAcrossStmgrs(common);
+
+  // Start the stream managers
+  StartStMgrs(common);
+
+  // Start the dummy workers
+  StartWorkerComponents(
+      common, num_msgs_sent_by_spout_instance,
+      (num_msgs_sent_by_spout_instance * common.num_spouts_ * common.num_spout_instances_));
+
+  // Wait for the bolt thread to complete receiving
+  for (size_t i = 0; i < common.bolt_workers_threads_list_.size(); ++i) {
+    common.bolt_workers_threads_list_[i]->join();
+  }
+
+  // Stop the schedulers
+  for (size_t i = 0; i < common.ss_list_.size(); ++i) {
+    common.ss_list_[i]->loopExit();
+  }
+
+  // Wait for the threads to terminate. We have already waited for the bolt
+  // threads
+  common.tmaster_thread_->join();
+  common.metrics_mgr_thread_->join();
+  for (size_t i = 0; i < common.stmgrs_threads_list_.size(); ++i) {
+    common.stmgrs_threads_list_[i]->join();
+  }
+  for (size_t i = 0; i < common.spout_workers_threads_list_.size(); ++i) {
+    common.spout_workers_threads_list_[i]->join();
+  }
+
+  // Verification
+  // Make sure all grouping worked
+  for (size_t w = 0; w < common.bolt_workers_list_.size(); ++w) {
+      EXPECT_EQ(
+          common.bolt_workers_list_[w]->MsgsRecvd(),
+          (num_msgs_sent_by_spout_instance * common.num_spouts_ * common.num_spout_instances_));
+  }
+
+  TearCommonResources(common);
+}
+
 TEST(StMgr, test_back_pressure_instance) {
   CommonResources common;
 

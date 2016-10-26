@@ -50,10 +50,12 @@ TupleCache::~TupleCache() {
 }
 
 sp_int64 TupleCache::add_data_tuple(sp_int32 _task_id, const proto::api::StreamId& _streamid,
-                                    const proto::system::HeronDataTuple& _tuple) {
+                                    const proto::system::HeronDataTuple& _tuple,
+                                    const bool all_grouping) {
   if (total_size_ >= drain_threshold_bytes_) drain_impl();
   TupleList* l = get(_task_id);
-  return l->add_data_tuple(_streamid, _tuple, &total_size_, &tuples_cache_max_tuple_size_);
+  return l->add_data_tuple(_streamid, _tuple, &total_size_, &tuples_cache_max_tuple_size_,
+         all_grouping);
 }
 
 void TupleCache::add_ack_tuple(sp_int32 _task_id, const proto::system::AckTuple& _tuple) {
@@ -107,7 +109,8 @@ TupleCache::TupleList::~TupleList() { CHECK(tuples_.empty()); }
 sp_int64 TupleCache::TupleList::add_data_tuple(const proto::api::StreamId& _streamid,
                                                const proto::system::HeronDataTuple& _tuple,
                                                sp_uint64* _total_size,
-                                               sp_uint64* _tuples_cache_max_tuple_size) {
+                                               sp_uint64* _tuples_cache_max_tuple_size,
+                                               const bool all_grouping = false) {
   if (!current_ || current_->has_control() || current_->data().stream().id() != _streamid.id() ||
       current_->data().stream().component_name() != _streamid.component_name() ||
       current_size_ > *_tuples_cache_max_tuple_size) {
@@ -123,6 +126,8 @@ sp_int64 TupleCache::TupleList::add_data_tuple(const proto::api::StreamId& _stre
   added_tuple->CopyFrom(_tuple);
   sp_int64 tuple_key = RandUtils::lrand();
   added_tuple->set_key(tuple_key);
+  if (all_grouping)
+    added_tuple->set_all_grouping(true);
   sp_int64 tuple_size = added_tuple->ByteSize();
   current_size_ += tuple_size;
   *_total_size += tuple_size;

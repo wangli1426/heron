@@ -36,6 +36,7 @@ LowestGrouping::LowestGrouping(const std::vector<sp_int32>& _task_ids) : Groupin
       lowest_taskid_ = _task_ids[i];
     }
   }
+//  SetGrouping(proto::api::LOWEST);
 }
 
 LowestGrouping::~LowestGrouping() {}

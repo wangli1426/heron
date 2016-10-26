@@ -547,12 +547,12 @@ void StMgr::HandleInstanceData(const sp_int32 _src_task_id, bool _local_spout,
       for (sp_int32 i = 0; i < d->tuples_size(); ++i) {
         // just to make sure that instances do not set any key
         CHECK_EQ(d->tuples(i).key(), 0);
-        std::list<sp_int32> out_tasks;
+        std::list<std::pair<sp_int32, sp_int32> > out_tasks;
         s_consumer->GetListToSend(d->tuples(i), out_tasks);
         // In addition to out_tasks, the instance might have asked
         // us to send the tuple to some more tasks
         for (sp_int32 j = 0; j < d->tuples(i).dest_task_ids_size(); ++j) {
-          out_tasks.push_back(d->tuples(i).dest_task_ids(j));
+          out_tasks.push_back(std::make_pair(d->tuples(i).dest_task_ids(j), -1));
         }
         if (out_tasks.empty()) {
           LOG(ERROR) << "Nobody to send the tuple to";
@@ -609,10 +609,10 @@ void StMgr::CopyControlOutBound(const proto::system::AckTuple& _control, bool _i
 void StMgr::CopyDataOutBound(sp_int32 _src_task_id, bool _local_spout,
                              const proto::api::StreamId& _streamid,
                              const proto::system::HeronDataTuple& _tuple,
-                             const std::list<sp_int32>& _out_tasks) {
+                             const std::list<std::pair<sp_int32, sp_int32> >& _out_tasks) {
   bool first_iteration = true;
   for (auto iter = _out_tasks.begin(); iter != _out_tasks.end(); ++iter) {
-    sp_int64 tuple_key = tuple_cache_->add_data_tuple(*iter, _streamid, _tuple);
+    sp_int64 tuple_key = tuple_cache_->add_data_tuple(iter->first, _streamid, _tuple, false);
     if (_tuple.roots_size() > 0) {
       // Anchored tuple
       if (_local_spout) {

@@ -37,8 +37,13 @@ class Grouping {
   virtual void GetListToSend(const proto::system::HeronDataTuple& _tuple,
                              std::list<sp_int32>& _return) = 0;
 
+  proto::api::Grouping GetGrouping() const;
+
+  void SetGrouping(proto::api::Grouping grouping);
+
  protected:
   std::vector<sp_int32> task_ids_;
+  proto::api::Grouping grouping_;
 };
 
 }  // namespace stmgr

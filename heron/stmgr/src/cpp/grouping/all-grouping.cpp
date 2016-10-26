@@ -30,7 +30,9 @@
 namespace heron {
 namespace stmgr {
 
-AllGrouping::AllGrouping(const std::vector<sp_int32>& _task_ids) : Grouping(_task_ids) {}
+AllGrouping::AllGrouping(const std::vector<sp_int32>& _task_ids) : Grouping(_task_ids) {
+//  SetGrouping(proto::api::AllGrouping);
+}
 
 AllGrouping::~AllGrouping() {}
 

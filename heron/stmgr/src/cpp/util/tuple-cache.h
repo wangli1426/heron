@@ -40,7 +40,7 @@ class TupleCache {
 
   // returns tuple key
   sp_int64 add_data_tuple(sp_int32 _task_id, const proto::api::StreamId& _streamid,
-                          const proto::system::HeronDataTuple& _tuple);
+                          const proto::system::HeronDataTuple& _tuple, const bool all_grouping);
   void add_ack_tuple(sp_int32 _task_id, const proto::system::AckTuple& _tuple);
   void add_fail_tuple(sp_int32 _task_id, const proto::system::AckTuple& _tuple);
   void add_emit_tuple(sp_int32 _task_id, const proto::system::AckTuple& _tuple);
@@ -59,7 +59,7 @@ class TupleCache {
 
     sp_int64 add_data_tuple(const proto::api::StreamId& _streamid,
                             const proto::system::HeronDataTuple& _tuple, sp_uint64* total_size_,
-                            sp_uint64* _tuples_cache_max_tuple_size);
+                            sp_uint64* _tuples_cache_max_tuple_size, const bool all_grouping);
     void add_ack_tuple(const proto::system::AckTuple& _tuple, sp_uint64* total_size_);
     void add_fail_tuple(const proto::system::AckTuple& _tuple, sp_uint64* total_size_);
     void add_emit_tuple(const proto::system::AckTuple& _tuple, sp_uint64* total_size_);

@@ -40,50 +40,62 @@ Grouping::~Grouping() {}
 Grouping* Grouping::Create(proto::api::Grouping grouping_, const proto::api::InputStream& _is,
                            const proto::api::StreamSchema& _schema,
                            const std::vector<sp_int32>& _task_ids) {
+  Grouping* ret;
   switch (grouping_) {
     case proto::api::SHUFFLE: {
-      return new ShuffleGrouping(_task_ids);
+      ret = new ShuffleGrouping(_task_ids);
       break;
     }
 
     case proto::api::FIELDS: {
-      return new FieldsGrouping(_is, _schema, _task_ids);
+      ret = new FieldsGrouping(_is, _schema, _task_ids);
       break;
     }
 
     case proto::api::ALL: {
-      return new AllGrouping(_task_ids);
+      ret = new AllGrouping(_task_ids);
       break;
     }
 
     case proto::api::LOWEST: {
-      return new LowestGrouping(_task_ids);
+      ret = new LowestGrouping(_task_ids);
       break;
     }
 
     case proto::api::NONE: {
       // This is what storm does right now
-      return new ShuffleGrouping(_task_ids);
+      ret = new ShuffleGrouping(_task_ids);
       break;
     }
 
     case proto::api::DIRECT: {
       LOG(FATAL) << "Direct grouping not supported";
-      return NULL;  // keep compiler happy
+      ret = NULL;  // keep compiler happy
       break;
     }
 
     case proto::api::CUSTOM: {
-      return new CustomGrouping(_task_ids);
+      ret = new CustomGrouping(_task_ids);
       break;
     }
 
     default: {
       LOG(FATAL) << "Unknown grouping " << grouping_;
-      return NULL;  // keep compiler happy
+      ret = NULL;  // keep compiler happy
       break;
     }
   }
+  if (ret != NULL) {
+    ret->SetGrouping(grouping_);
+  }
+}
+
+void Grouping::SetGrouping(proto::api::Grouping grouping) {
+  grouping_ = grouping;
+}
+
+proto::api::Grouping Grouping::GetGrouping() const {
+  return grouping_;
 }
 
 }  // namespace stmgr

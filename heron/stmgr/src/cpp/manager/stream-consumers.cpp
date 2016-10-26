@@ -19,6 +19,7 @@
 #include <iostream>
 #include <list>
 #include <vector>
+#include <utility>
 #include "grouping/grouping.h"
 #include "proto/messages.h"
 #include "basics/basics.h"
@@ -50,9 +51,20 @@ void StreamConsumers::NewConsumer(const proto::api::InputStream& _is,
 }
 
 void StreamConsumers::GetListToSend(const proto::system::HeronDataTuple& _tuple,
-                                    std::list<sp_int32>& _return) {
+                                    std::list<std::pair<sp_int32, sp_int32> >& _return) {
+  sp_int32 group_id = 0;
   for (auto iter = consumers_.begin(); iter != consumers_.end(); ++iter) {
-    (*iter)->GetListToSend(_tuple, _return);
+    std::list<sp_int32> _tasks;
+    (*iter)->GetListToSend(_tuple, _tasks);
+    sp_int32 current_group_id;
+    if ((*iter)->GetGrouping() == proto::api::ALL) {
+      current_group_id = group_id++;
+    } else {
+      current_group_id = -1;
+    }
+    for (auto task_iter = _tasks.begin(); task_iter != _tasks.end(); ++task_iter) {
+      _return.push_back(std::make_pair(*task_iter, current_group_id));
+    }
   }
 }
 

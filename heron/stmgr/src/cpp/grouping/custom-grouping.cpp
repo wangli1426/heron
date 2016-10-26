@@ -30,7 +30,9 @@
 namespace heron {
 namespace stmgr {
 
-CustomGrouping::CustomGrouping(const std::vector<sp_int32>& _task_ids) : Grouping(_task_ids) {}
+CustomGrouping::CustomGrouping(const std::vector<sp_int32>& _task_ids) : Grouping(_task_ids) {
+//  SetGrouping(proto::api::CustomGrouping);
+}
 
 CustomGrouping::~CustomGrouping() {}
 

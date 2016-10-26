@@ -40,6 +40,7 @@ FieldsGrouping::FieldsGrouping(const proto::api::InputStream& _is,
       }
     }
   }
+//  SetGrouping(proto::api::FieldsGrouping);
 }
 
 FieldsGrouping::~FieldsGrouping() {}
