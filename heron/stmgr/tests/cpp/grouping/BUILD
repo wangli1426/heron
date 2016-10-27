@@ -99,3 +99,21 @@ cc_test(
     size = "small",
     linkstatic = 1,
 )
+
+cc_binary(
+    name = "grouping-performance-test",
+    srcs = [
+        "grouping_performance_test.cpp",
+    ],
+    copts = [
+        "-Iheron",
+        "-Iheron/common/src/cpp",
+        "-Iheron/stmgr/src/cpp",
+        "-I$(GENDIR)/heron",
+        "-I$(GENDIR)/heron/common/src/cpp",
+    ],
+    deps = [
+        "//heron/stmgr/src/cpp:grouping-cxx",
+    ],
+    linkstatic = 1,
+)

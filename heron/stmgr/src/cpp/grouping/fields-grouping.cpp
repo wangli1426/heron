@@ -58,5 +58,39 @@ void FieldsGrouping::GetListToSend(const proto::system::HeronDataTuple& _tuple,
   _return.push_back(task_ids_[task_index]);
 }
 
+void FieldsGrouping::HandCodedGetListToSend(const proto::system::HeronDataTuple& _tuple,
+                                   std::vector<sp_int32>& _return) {
+  sp_int32 task_index = 0;
+  size_t prime_num = 633910111UL;
+//  for (std::list<sp_int32>::iterator iter = fields_grouping_indices_.begin();
+//       iter != fields_grouping_indices_.end(); ++iter) {
+  for (sp_int32 i = 0; i < 5; i++) {
+    CHECK_GT(_tuple.values_size(), 0);
+    size_t h = str_hash_fn(_tuple.values(i));
+//    size_t h = *(reinterpret_cast<const size_t*>(_tuple.values(0).c_str()));
+    task_index = (h % prime_num);
+  }
+//
+//    CHECK_GT(_tuple.values_size(), 0);
+//    h = str_hash_fn(_tuple.values(1));
+//    task_index += (h % prime_num);
+//
+//    CHECK_GT(_tuple.values_size(), 0);
+//    h = str_hash_fn(_tuple.values(2));
+//    task_index += (h % prime_num);
+//
+//    CHECK_GT(_tuple.values_size(), 0);
+//    h = str_hash_fn(_tuple.values(3));
+//    task_index += (h % prime_num);
+//
+//    CHECK_GT(_tuple.values_size(), 0);
+//    h = str_hash_fn(_tuple.values(4));
+//    task_index += (h % prime_num);
+
+//  }
+  task_index = task_index % task_ids_.size();
+  _return.push_back(task_ids_[task_index]);
+}
+
 }  // namespace stmgr
 }  // namespace heron
